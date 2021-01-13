@@ -1,0 +1,26 @@
+---
+- name: Retrieve gzipped PTP logs
+  hosts: ptp
+  tasks:
+  - name: Get PTP pod name 
+    shell: "ls /var/log/pods |grep linuxptp"
+    register: result
+
+  - name: Create a list of logs
+    find:
+      paths: /var/log/pods/{{ result.stdout }}/linuxptp-daemon-container
+      patterns: '*.gz'
+    register: files
+
+  - name: Create directory if not present
+    file:
+      path: '{{ inventory_hostname }}'
+      state: directory
+    delegate_to: localhost
+
+  - name: Copy zipped logs
+    fetch:
+      src: '{{ item.path }}'
+      dest: '{{ inventory_hostname }}/'
+      flat: yes
+    with_items: '{{ files.files }}'
